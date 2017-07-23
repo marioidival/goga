@@ -1,4 +1,4 @@
-use server::app::GogaApp;
+use server::app::{GogaShellApp, GogaApp};
 use server::sapper;
 
 
@@ -7,6 +7,7 @@ pub fn run() {
 
     sapp.address("0.0.0.0")
         .port(3210)
+        .with_shell(Box::new(GogaShellApp))
         .add_module(Box::new(GogaApp));
     println!("listening on http://0.0.0.0:3210");
 
