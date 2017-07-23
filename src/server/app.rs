@@ -12,13 +12,11 @@ pub struct GogaShellApp;
 
 impl SapperAppShell for GogaShellApp {
     fn before(&self, req: &mut Request) -> Result<()> {
-        println!("before all");
         sapper_std::init(req)?;
         Ok(())
     }
 
     fn after(&self, req: &Request, res: &mut Response) -> Result<()> {
-        println!("after all");
         sapper_std::finish(req, res)?;
         Ok(())
     }
@@ -34,10 +32,8 @@ impl GogaApp {
 }
 
 impl SapperModule for GogaApp {
-
     fn router(&self, router: &mut SapperRouter) -> Result<()> {
         router.get("/", GogaApp::index);
-
         Ok(())
     }
 }
