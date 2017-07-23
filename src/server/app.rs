@@ -3,7 +3,6 @@ use server::sapper::SapperModule;
 use server::sapper::SapperAppShell;
 use server::sapper::Request;
 use server::sapper::Response;
-use server::sapper::PathParams;
 use server::sapper::SapperRouter;
 use sapper_std;
 
@@ -26,20 +25,18 @@ impl SapperAppShell for GogaShellApp {
 }
 
 impl GogaApp {
-    fn index(req: &mut Request) -> Result<Response> {
-        let params = get_path_params!(req);
-        let hello = t_param!(params, "hello").parse::<String>().unwrap();
-
-        let mut response = Response::new();
-        response.write_body(format!("hello, {}!", hello).to_string());
-        Ok(response)
+    fn index(_: &mut Request) -> Result<Response> {
+        let welcome = json!({
+            "msg": "Welcome to Goga",
+        });
+        res_json!(welcome)
     }
 }
 
 impl SapperModule for GogaApp {
 
     fn router(&self, router: &mut SapperRouter) -> Result<()> {
-        router.get("/:hello", GogaApp::index);
+        router.get("/", GogaApp::index);
 
         Ok(())
     }

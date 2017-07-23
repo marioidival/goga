@@ -1,4 +1,6 @@
 #[macro_use]
+extern crate serde_json;
+#[macro_use]
 extern crate sapper_std;
 extern crate sapper;
 
