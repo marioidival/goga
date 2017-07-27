@@ -4,11 +4,5 @@ version = "0.1.0"
 authors = ["Mario Idival <marioidival@gmail.com>"]
 
 [dependencies]
-sapper = { git = "https://github.com/sappworks/sapper.git", branch = "master" }
-dbmigrate = { git = "https://github.com/Keats/dbmigrate.git", branch = "master" }
-sapper_std = { git = "https://github.com/sappworks/sapper_std.git", branch = "master" }
-postgres = "*"
-log = "*"
-env_logger = "*"
-serde = "*"
-serde_json = "*"
+rocket = "0.3.0"
+rocket_codegen = "0.3.0"
