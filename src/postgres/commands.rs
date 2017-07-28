@@ -57,8 +57,19 @@ pub fn ext_where(qs: QueryString) -> WhereResult {
 
     for params in &qs.query {
         pid = pid + 1;
-        where_fields.push(format!("{}=${}", params.k, pid));
-        where_values.push(params.v.to_string());
+        let result = match params.v.contains(".") {
+            true => {
+                let v: Vec<&str> = params.v.split(".").collect();
+                let op = match query_operator(&v[0].to_string()) {
+                    Ok(x) => x,
+                    Err(e) => return Err(e.to_string())
+                };
+                (op, v[1].to_string())
+            },
+            _ => ("=".to_string(), params.v.to_string())
+        };
+        where_fields.push(format!("{}{}${}", params.k, result.0, pid));
+        where_values.push(result.1);
     }
 
     if pid > 1 {
@@ -134,5 +145,31 @@ mod tests {
             .unwrap();
         assert_eq!(result.sql, "WHERE user_id=$1 AND name=$2".to_string());
         assert_eq!(result.values, vec!["5".to_string(), "goga".to_string()])
+    }
+
+    #[test]
+    fn where_by_request_with_query_operators(){
+        let mut hm = Vec::new();
+        hm.push(Params{k: "user_id".to_string(), v: "$ne.5".to_string()});
+        hm.push(Params{k: "name".to_string(), v: "goga".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_where(qs)
+            .unwrap();
+        assert_eq!(result.sql, "WHERE user_id!=$1 AND name=$2".to_string());
+        assert_eq!(result.values, vec!["5".to_string(), "goga".to_string()])
+    }
+
+    #[test]
+    fn where_by_request_with_query_invalid_operators(){
+        let mut hm = Vec::new();
+        hm.push(Params{k: "user_id".to_string(), v: "$nt.5".to_string()});
+        hm.push(Params{k: "name".to_string(), v: "goga".to_string()});
+
+        let qs = QueryString{ query: hm };
+        match ext_where(qs) {
+            Err(e) => assert_eq!(e, "operator $nt not found"),
+            Ok(_) => println!("no result")
+        }
     }
 }
