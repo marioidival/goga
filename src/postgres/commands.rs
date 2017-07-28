@@ -1,6 +1,6 @@
 extern crate rocket;
 
-use rocket::{Request, Data, Outcome};
+use rocket::{Request, Data};
 use rocket::data::{self, FromData};
 use rocket::Outcome::*;
 use std::collections::HashMap;
@@ -14,11 +14,13 @@ pub struct WhereStructResult {
 type QueryOpResult = Result<String, String>;
 type WhereResult = Result<WhereStructResult, String>;
 
+// TODO: Move there later!
 // implement QueryString
 pub struct QueryString {
     query: HashMap<String, String>
 }
 
+// TODO: Use FromForm instead FromData
 impl FromData for QueryString {
     type Error = String;
 
@@ -53,20 +55,34 @@ pub fn query_operator(qop: &String) -> QueryOpResult {
     }
 }
 
-// Get request and return chuck WHERE statement with values
-pub fn ext_where(_: &Request) -> WhereResult {
+// Get QueryString and return chunck WHERE statement with values
+pub fn ext_where(qs: QueryString) -> WhereResult {
+    let where_syntax: String;
+    let mut pid: u32 = 0;
+    let mut where_values: Vec<String> = Vec::new();
+    let mut where_fields: Vec<String> = Vec::new();
+
+    for (k, v) in qs.query.iter() {
+        pid = pid + 1;
+        where_fields.push(format!("{}=${}", k, pid));
+        where_values.push(v.to_string());
+    }
+
+    if pid > 1 {
+        where_syntax = format!("WHERE {}", where_fields.join(" AND "));
+    } else {
+        where_syntax = format!("WHERE {}", where_fields.join(" "));
+    }
+
     Ok(WhereStructResult {
-        sql: "WHERE user_id=$1".to_string(),
-        values: vec!["5".to_string()],
+        sql: where_syntax,
+        values: where_values
     })
 }
 
 
 #[cfg(test)]
 mod tests {
-    use super::{rocket};
-    use rocket::local::Client;
-    use rocket::http::ContentType;
     use postgres::commands::*;
 
     #[test]
@@ -103,15 +119,27 @@ mod tests {
     }
 
     #[test]
-    fn where_by_request() {
-        let client = Client::new(rocket::ignite())
-            .expect("valid rocket");
-        let req = client.get("/db/sch/tbl?user_id=5&name=cool")
-            .header(ContentType::JSON);
-        let result = ext_where(req.inner())
-            .unwrap();
+    fn where_by_request_one_querystring() {
+        let mut hm = HashMap::new();
+        hm.insert("user_id".to_string(), "5".to_string());
 
+        let qs = QueryString{ query: hm };
+        let result = ext_where(qs)
+            .unwrap();
         assert_eq!(result.sql, "WHERE user_id=$1".to_string());
         assert_eq!(result.values, vec!["5".to_string()])
+    }
+
+    #[test]
+    fn where_by_request_n_querystring() {
+        let mut hm = HashMap::new();
+        hm.insert("user_id".to_string(), "5".to_string());
+        hm.insert("name".to_string(), "goga".to_string());
+
+        let qs = QueryString{ query: hm };
+        let result = ext_where(qs)
+            .unwrap();
+        assert_eq!(result.sql, "WHERE user_id=$1 AND name=$2".to_string());
+        assert_eq!(result.values, vec!["5".to_string(), "goga".to_string()])
     }
 }
