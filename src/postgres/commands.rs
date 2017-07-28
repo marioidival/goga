@@ -1,9 +1,6 @@
 extern crate rocket;
 
-use rocket::{Request, Data};
-use rocket::data::{self, FromData};
-use rocket::Outcome::*;
-use std::collections::HashMap;
+use rocket::request::{FromForm, FormItems};
 
 
 pub struct WhereStructResult {
@@ -14,30 +11,26 @@ pub struct WhereStructResult {
 type QueryOpResult = Result<String, String>;
 type WhereResult = Result<WhereStructResult, String>;
 
-// TODO: Move there later!
+// TODO: Move there later
+pub struct Params {
+    k: String, v: String,
+}
 // implement QueryString
 pub struct QueryString {
-    query: HashMap<String, String>
+    query: Vec<Params>
 }
 
-// TODO: Use FromForm instead FromData
-impl FromData for QueryString {
-    type Error = String;
+impl<'f> FromForm<'f> for QueryString {
+    type Error = ();
 
-    fn from_data(req: &Request, _: Data) -> data::Outcome<Self, String> {
-        let querystring: Vec<&str> = req.uri().query()
-            .unwrap().split("&").collect();
-        let mut result: QueryString = QueryString{query: HashMap::new()};
-
-        for qs in querystring {
-            let kv: Vec<&str> = qs.split("=").collect();
-            // [0] is key, [1] is value
-            result.query.insert(kv[0].to_string(), kv[1].to_string());
+    fn from_form(items: &mut FormItems<'f>, strict: bool) -> Result<QueryString, ()> {
+        let mut qs: QueryString = QueryString{ query: Vec::new() };
+        for (k, v) in items {
+            qs.query.push(Params{k: k.to_string(), v: v.url_decode().unwrap()});
         }
-        Success(result)
+        Ok(qs)
     }
 }
-
 
 pub fn query_operator(qop: &String) -> QueryOpResult {
     match &qop[..] {
@@ -62,10 +55,10 @@ pub fn ext_where(qs: QueryString) -> WhereResult {
     let mut where_values: Vec<String> = Vec::new();
     let mut where_fields: Vec<String> = Vec::new();
 
-    for (k, v) in qs.query.iter() {
+    for params in &qs.query {
         pid = pid + 1;
-        where_fields.push(format!("{}=${}", k, pid));
-        where_values.push(v.to_string());
+        where_fields.push(format!("{}=${}", params.k, pid));
+        where_values.push(params.v.to_string());
     }
 
     if pid > 1 {
@@ -120,8 +113,8 @@ mod tests {
 
     #[test]
     fn where_by_request_one_querystring() {
-        let mut hm = HashMap::new();
-        hm.insert("user_id".to_string(), "5".to_string());
+        let mut hm = Vec::new();
+        hm.push(Params{k: "user_id".to_string(), v: "5".to_string()});
 
         let qs = QueryString{ query: hm };
         let result = ext_where(qs)
@@ -132,9 +125,9 @@ mod tests {
 
     #[test]
     fn where_by_request_n_querystring() {
-        let mut hm = HashMap::new();
-        hm.insert("user_id".to_string(), "5".to_string());
-        hm.insert("name".to_string(), "goga".to_string());
+        let mut hm = Vec::new();
+        hm.push(Params{k: "user_id".to_string(), v: "5".to_string()});
+        hm.push(Params{k: "name".to_string(), v: "goga".to_string()});
 
         let qs = QueryString{ query: hm };
         let result = ext_where(qs)
