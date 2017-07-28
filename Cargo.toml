@@ -6,3 +6,11 @@ authors = ["Mario Idival <marioidival@gmail.com>"]
 [dependencies]
 rocket = "0.3.0"
 rocket_codegen = "0.3.0"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"
+
+[dependencies.rocket_contrib]
+version = "*"
+default-features = false
+features = ["json"]

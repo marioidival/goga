@@ -1,9 +1,7 @@
-#[macro_use]
-extern crate serde_json;
-#[macro_use]
-extern crate sapper_std;
-extern crate sapper;
+#![feature(plugin)]
+#![plugin(rocket_codegen)]
+extern crate rocket;
+
 
 pub mod postgres;
-pub mod api;
 pub mod server;
