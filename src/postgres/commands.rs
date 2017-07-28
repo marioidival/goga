@@ -13,11 +13,11 @@ type WhereResult = Result<WhereStructResult, String>;
 
 // TODO: Move there later
 pub struct Params {
-    k: String, v: String,
+    pub k: String, pub v: String,
 }
 // implement QueryString
 pub struct QueryString {
-    query: Vec<Params>
+    pub query: Vec<Params>
 }
 
 impl<'f> FromForm<'f> for QueryString {
