@@ -8,10 +8,11 @@ pub struct WhereStructResult {
 }
 
 // My Results
-type QueryOpResult = Result<String, String>;
+type QueryOpResult = Result<&'static str, String>;
 type WhereResult = Result<WhereStructResult, String>;
 
 // TODO: Move there later
+#[derive(Clone)]
 pub struct Params {
     pub k: String, pub v: String,
 }
@@ -32,47 +33,56 @@ impl<'f> FromForm<'f> for QueryString {
     }
 }
 
-pub fn query_operator(qop: &String) -> QueryOpResult {
+pub fn query_operator(qop: &str) -> QueryOpResult {
     match &qop[..] {
-        "$eq" => Ok("=".to_string()),
-        "$ne" => Ok("!=".to_string()),
-        "$gt" => Ok(">".to_string()),
-        "$lt" => Ok("<".to_string()),
-        "$gte" => Ok(">=".to_string()),
-        "$lte" => Ok("<=".to_string()),
-        "$in" => Ok("IN".to_string()),
-        "$nin" => Ok("NOT IN".to_string()),
-        "$notnull" => Ok("IS NOT NULL".to_string()),
-        "$null" => Ok("IS NULL".to_string()),
+        "$eq" => Ok("="),
+        "$ne" => Ok("!="),
+        "$gt" => Ok(">"),
+        "$lt" => Ok("<"),
+        "$gte" => Ok(">="),
+        "$lte" => Ok("<="),
+        "$in" => Ok("IN"),
+        "$nin" => Ok("NOT IN"),
+        "$notnull" => Ok("IS NOT NULL"),
+        "$null" => Ok("IS NULL"),
          _ => Err(format!("operator {} not found", qop)),
     }
+}
+
+fn collect_params(v: &Vec<Params>, collect_values: bool) -> Vec<String> {
+    let mut pid: i32 = 0;
+    v.iter()
+        .map(|param| {
+            pid = pid + 1;
+            let p = param.clone();
+            let result = match p.v.contains(".") {
+                true => {
+                    let value_splited = p.v.split(".").collect::<Vec<&str>>();
+                    let operator = match query_operator(value_splited[0]) {
+                        Ok(op) => op,
+                        _ => "operator not found"
+                    };
+                    (operator, value_splited[1])
+                },
+                _ => ("=", p.v.as_str())
+            };
+            if collect_values {
+                format!("{}", result.1)
+            } else {
+                format!("{}{}${}", p.k, result.0, pid)
+            }
+        })
+        .collect()
 }
 
 // Get QueryString and return chunck WHERE statement with values
 pub fn ext_where(qs: QueryString) -> WhereResult {
     let where_syntax: String;
-    let mut pid: u32 = 0;
-    let mut where_values: Vec<String> = Vec::new();
-    let mut where_fields: Vec<String> = Vec::new();
+    let ref iter_params = qs.query;
+    let where_values = collect_params(iter_params, true);
+    let where_fields = collect_params(iter_params, false);
 
-    for params in &qs.query {
-        pid = pid + 1;
-        let result = match params.v.contains(".") {
-            true => {
-                let v: Vec<&str> = params.v.split(".").collect();
-                let op = match query_operator(&v[0].to_string()) {
-                    Ok(x) => x,
-                    Err(e) => return Err(e.to_string())
-                };
-                (op, v[1].to_string())
-            },
-            _ => ("=".to_string(), params.v.to_string())
-        };
-        where_fields.push(format!("{}{}${}", params.k, result.0, pid));
-        where_values.push(result.1);
-    }
-
-    if pid > 1 {
+    if where_fields.len() > 1 {
         where_syntax = format!("WHERE {}", where_fields.join(" AND "));
     } else {
         where_syntax = format!("WHERE {}", where_fields.join(" "));
