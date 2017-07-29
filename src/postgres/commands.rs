@@ -12,7 +12,6 @@ type QueryOpResult = Result<&'static str, String>;
 type WhereResult = Result<WhereStructResult, String>;
 
 // TODO: Move there later
-#[derive(Clone)]
 pub struct Params {
     pub k: String, pub v: String,
 }
@@ -54,22 +53,21 @@ fn collect_params(v: &Vec<Params>, collect_values: bool) -> Vec<String> {
     v.iter()
         .map(|param| {
             pid = pid + 1;
-            let p = param.clone();
-            let result = match p.v.contains(".") {
+            let result = match param.v.contains(".") {
                 true => {
-                    let value_splited = p.v.split(".").collect::<Vec<&str>>();
+                    let value_splited = param.v.split(".").collect::<Vec<&str>>();
                     let operator = match query_operator(value_splited[0]) {
                         Ok(op) => op,
                         _ => "operator not found"
                     };
                     (operator, value_splited[1])
                 },
-                _ => ("=", p.v.as_str())
+                _ => ("=", param.v.as_str())
             };
             if collect_values {
                 format!("{}", result.1)
             } else {
-                format!("{}{}${}", p.k, result.0, pid)
+                format!("{}{}${}", param.k, result.0, pid)
             }
         })
         .collect()
