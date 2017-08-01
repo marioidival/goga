@@ -8,9 +8,9 @@ This project is highly inspired on [pREST](https://github.com/nuveo/prest/)
 
 # TODO
 - HTTP GET
-	- [ ] SELECT `/db/sch/tbl?_select=column`
-		- [ ] select with all columns `*`
-		- [ ] select with specific column `_select=column1,column2`
+	- [X] SELECT `/db/sch/tbl?_select=column`
+		- [X] select with all columns `*`
+		- [X] select with specific column `_select=column1,column2`
 	- [ ] WHERE `/db/sch/tbl?column=value`
 		- [X] filter with operators `column=$gt.100`
 		- [ ] filter with json/jsonb columns

@@ -226,4 +226,15 @@ mod tests {
             .unwrap();
         assert_eq!(result.sql, "SELECT name,age FROM");
     }
+
+     #[test]
+    fn select_by_request_n_empty_value() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_select".to_string(), v: "".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_select(qs)
+            .unwrap();
+        assert_eq!(result.sql, "SELECT * FROM");
+    }
 }
