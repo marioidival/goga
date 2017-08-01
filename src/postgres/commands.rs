@@ -50,7 +50,7 @@ pub fn query_operator(qop: &str) -> QueryOpResult {
     }
 }
 
-fn collect_params(v: &Vec<Params>, collect_values: bool) -> Vec<String> {
+fn collect_params(v: &Vec<Params>, collect_values: bool) -> Result<Vec<String>,String> {
     let mut pid: i32 = 0;
     v.iter()
         .map(|param| {
@@ -60,16 +60,16 @@ fn collect_params(v: &Vec<Params>, collect_values: bool) -> Vec<String> {
                     let value_splited = param.v.split(".").collect::<Vec<&str>>();
                     let operator = match query_operator(value_splited[0]) {
                         Ok(op) => op,
-                        _ => "operator not found"
+                        Err(e) => return Err(e)
                     };
                     (operator, value_splited[1])
                 },
                 _ => ("=", param.v.as_str())
             };
             if collect_values {
-                format!("{}", result.1)
+                Ok(format!("{}", result.1))
             } else {
-                format!("{}{}${}", param.k, result.0, pid)
+                Ok(format!("{}{}${}", param.k, result.0, pid))
             }
         })
         .collect()
@@ -95,8 +95,14 @@ pub fn ext_select(qs: QueryString) -> SelectResult {
 pub fn ext_where(qs: QueryString) -> WhereResult {
     let where_syntax: String;
     let ref iter_params = qs.query;
-    let where_values = collect_params(iter_params, true);
-    let where_fields = collect_params(iter_params, false);
+    let where_values = match collect_params(iter_params, true) {
+        Ok(result) => result,
+        Err(e) => return Err(e.to_string())
+    };
+    let where_fields = match collect_params(iter_params, false) {
+        Ok(result) => result,
+        Err(e) => return Err(e.to_string())
+    };
 
     if where_fields.len() > 1 {
         where_syntax = format!("WHERE {}", where_fields.join(" AND "));
@@ -195,7 +201,7 @@ mod tests {
         let qs = QueryString{ query: hm };
         match ext_where(qs) {
             Err(e) => assert_eq!(e, "operator $nt not found"),
-            Ok(x) => println!("no result: {}", x.sql)
+            Ok(_) => println!("no result")
         }
     }
 
