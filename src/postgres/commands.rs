@@ -3,12 +3,14 @@ extern crate rocket;
 use rocket::request::{FromForm, FormItems};
 
 
+pub struct SelectStructResult {sql: String}
 pub struct WhereStructResult {
     sql: String, values: Vec<String>,
 }
 
 // My Results
 type QueryOpResult = Result<&'static str, String>;
+type SelectResult = Result<SelectStructResult, String>;
 type WhereResult = Result<WhereStructResult, String>;
 
 // TODO: Move there later
@@ -71,6 +73,22 @@ fn collect_params(v: &Vec<Params>, collect_values: bool) -> Vec<String> {
             }
         })
         .collect()
+}
+
+pub fn ext_select(qs: QueryString) -> SelectResult {
+    let mut select_syntax: String = "SELECT * FROM".to_string();
+    let select_param = qs.query.iter().find(|param| param.k == "_select".to_string());
+    let columns = match select_param {
+        Some(param) => &param.v,
+        _ => return Err("".to_string())
+    };
+
+    // empty string means that isn't `_select` command
+    if columns != "" {
+        select_syntax = format!("SELECT {} FROM", columns);
+    }
+
+    Ok(SelectStructResult{ sql: select_syntax })
 }
 
 // Get QueryString and return chunck WHERE statement with values
@@ -177,7 +195,29 @@ mod tests {
         let qs = QueryString{ query: hm };
         match ext_where(qs) {
             Err(e) => assert_eq!(e, "operator $nt not found"),
-            Ok(_) => println!("no result")
+            Ok(x) => println!("no result: {}", x.sql)
         }
+    }
+
+    #[test]
+    fn select_by_request_one_column() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_select".to_string(), v: "name".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_select(qs)
+            .unwrap();
+        assert_eq!(result.sql, "SELECT name FROM");
+    }
+
+    #[test]
+    fn select_by_request_n_column() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_select".to_string(), v: "name,age".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_select(qs)
+            .unwrap();
+        assert_eq!(result.sql, "SELECT name,age FROM");
     }
 }
