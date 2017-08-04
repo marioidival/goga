@@ -14,9 +14,9 @@ This project is highly inspired on [pREST](https://github.com/nuveo/prest/)
 	- [ ] WHERE `/db/sch/tbl?column=value`
 		- [X] filter with operators `column=$gt.100`
 		- [ ] filter with json/jsonb columns
-	- [ ] COUNT `/db/sch/tbl?_count=column`
-		- [ ] count with all columns `*`
-		- [ ] count with specific column `_count=column1,column2`
+	- [X] COUNT `/db/sch/tbl?_count=column`
+		- [X] count with all columns `*`
+		- [X] count with specific column `_count=column1,column2`
 	- [ ] ORDER BY `/db/sch/tbl?_order=column`
 		- [ ] order by with asc `_order=column` __default__
 		- [ ] order by with desc `_order=-column`

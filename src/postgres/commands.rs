@@ -3,14 +3,14 @@ extern crate rocket;
 use rocket::request::{FromForm, FormItems};
 
 
-pub struct SelectStructResult {sql: String}
+pub struct StatementStructResult {sql: String}
 pub struct WhereStructResult {
     sql: String, values: Vec<String>,
 }
 
 // My Results
 type QueryOpResult = Result<&'static str, String>;
-type SelectResult = Result<SelectStructResult, String>;
+type StatementResult = Result<StatementStructResult, String>;
 type WhereResult = Result<WhereStructResult, String>;
 
 // TODO: Move there later
@@ -75,7 +75,8 @@ fn collect_params(v: &Vec<Params>, collect_values: bool) -> Result<Vec<String>,S
         .collect()
 }
 
-pub fn ext_select(qs: QueryString) -> SelectResult {
+// Get QueryString and return SELECT statement
+pub fn ext_select(qs: QueryString) -> StatementResult {
     let mut select_syntax: String = "SELECT * FROM".to_string();
     let select_param = qs.query.iter().find(|param| param.k == "_select".to_string());
     let columns = match select_param {
@@ -88,7 +89,30 @@ pub fn ext_select(qs: QueryString) -> SelectResult {
         select_syntax = format!("SELECT {} FROM", columns);
     }
 
-    Ok(SelectStructResult{ sql: select_syntax })
+    Ok(StatementStructResult{ sql: select_syntax })
+}
+
+// Get QueryString and return COUNT clause statement
+pub fn ext_count(qs: QueryString) -> StatementResult {
+    let mut count_syntax: String = String::new();
+    let count_param = qs.query.iter().find(|param| param.k == "_count".to_string());
+    let columns = match count_param {
+        Some(param)=> {
+            let vsplited = &param.v.split(",").collect::<Vec<&str>>();
+            // FIXME, How to improve it?
+            let u :usize = 2;
+            if vsplited.len() >= u {
+                return Err("could not use more than one column in count function".to_string())
+            }
+            &param.v
+        },
+        _ => return Err("".to_string())
+    };
+
+    if columns != "" {
+        count_syntax = format!("SELECT COUNT({}) FROM", columns);
+    }
+    Ok(StatementStructResult{ sql: count_syntax })
 }
 
 // Get QueryString and return chunck WHERE statement with values
@@ -227,7 +251,7 @@ mod tests {
         assert_eq!(result.sql, "SELECT name,age FROM");
     }
 
-     #[test]
+    #[test]
     fn select_by_request_n_empty_value() {
         let mut hm = Vec::new();
         hm.push(Params{k: "_select".to_string(), v: "".to_string()});
@@ -236,5 +260,50 @@ mod tests {
         let result = ext_select(qs)
             .unwrap();
         assert_eq!(result.sql, "SELECT * FROM");
+    }
+
+    #[test]
+    fn count_by_request() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_count".to_string(), v: "name".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_count(qs)
+            .unwrap();
+        assert_eq!(result.sql, "SELECT COUNT(name) FROM");
+    }
+
+    #[test]
+    fn count_by_request_all_fields() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_count".to_string(), v: "*".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_count(qs)
+            .unwrap();
+        assert_eq!(result.sql, "SELECT COUNT(*) FROM");
+    }
+
+    #[test]
+    fn count_by_request_two_fields() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_count".to_string(), v: "name,age".to_string()});
+
+        let qs = QueryString{ query: hm };
+        match ext_count(qs) {
+            Err(e) => assert_eq!(e, "could not use more than one column in count function"),
+            Ok(_) => println!("no result")
+        }
+    }
+
+    #[test]
+    fn count_by_request_empty_value() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_count".to_string(), v: "".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_count(qs)
+            .unwrap();
+        assert_eq!(result.sql, "")
     }
 }
