@@ -168,6 +168,21 @@ pub fn ext_order(qs: QueryString) -> StatementResult {
     Ok(StatementStructResult{ sql: order_syntax })
 }
 
+// Get QueryString and return chunk GROUP BY statement
+pub fn ext_groupby(qs: QueryString) -> StatementResult {
+    let mut groupby_syntax: String = String::new();
+    let groupby_params = qs.query.iter().find(|param| param.k == String::from("_groupby"));
+    let columns = match groupby_params {
+        Some(param) => &param.v,
+        _ => return Err(String::from(""))
+    };
+
+    if columns != "" {
+        groupby_syntax = format!("GROUP BY {}", columns);
+    }
+    Ok(StatementStructResult{ sql: groupby_syntax })
+}
+
 #[cfg(test)]
 mod tests {
     use postgres::commands::*;
@@ -387,5 +402,27 @@ mod tests {
         let result = ext_order(qs)
             .unwrap();
         assert_eq!(result.sql, "ORDER BY name,age DESC")
+    }
+
+    #[test]
+    fn groupby_by_request() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_groupby".to_string(), v: "name".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_groupby(qs)
+            .unwrap();
+        assert_eq!(result.sql, "GROUP BY name")
+    }
+
+    #[test]
+    fn groupby_by_request_empty_param() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: String::from("_groupby"), v: String::from("")});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_groupby(qs)
+            .unwrap();
+        assert_eq!(result.sql, "")
     }
 }
