@@ -5,3 +5,4 @@ extern crate rocket;
 
 pub mod postgres;
 pub mod server;
+pub mod api;
