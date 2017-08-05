@@ -140,6 +140,33 @@ pub fn ext_where(qs: QueryString) -> WhereResult {
     })
 }
 
+// Get QueryString and return chunk ORDER BY statement
+pub fn ext_order(qs: QueryString) -> StatementResult {
+    let mut order_syntax: String = String::new();
+    let order_params = qs.query.iter().find(|param| param.k == "_order".to_string());
+    let columns = match order_params {
+        Some(param) => {
+            // need some refactor after!
+            let vspl = &param.v.split(",").map(|s| s.to_string()).collect::<Vec<String>>();
+            let od: Vec<String> = vspl.iter().map(|param| {
+                let mut s = String::new();
+                s.push_str(param); // omg
+                if s.starts_with("-") {
+                    s.remove(0);
+                    s.push_str(" DESC")
+                }
+                format!("{}", s)
+            }).collect();
+            format!("{}", od.join(","))
+        },
+        _ => return Err("".to_string())
+    };
+
+    if columns != "" {
+        order_syntax = format!("ORDER BY {}", columns);
+    }
+    Ok(StatementStructResult{ sql: order_syntax })
+}
 
 #[cfg(test)]
 mod tests {
@@ -305,5 +332,60 @@ mod tests {
         let result = ext_count(qs)
             .unwrap();
         assert_eq!(result.sql, "")
+    }
+
+    #[test]
+    fn order_by_request() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_order".to_string(), v: "name".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_order(qs)
+            .unwrap();
+        assert_eq!(result.sql, "ORDER BY name")
+    }
+
+    #[test]
+    fn order_by_request_desc() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_order".to_string(), v: "-name".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_order(qs)
+            .unwrap();
+        assert_eq!(result.sql, "ORDER BY name DESC")
+    }
+
+    #[test]
+    fn order_by_request_empty_params() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_order".to_string(), v: "".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_order(qs)
+            .unwrap();
+        assert_eq!(result.sql, "")
+    }
+
+    #[test]
+    fn order_by_request_multiples_columns() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_order".to_string(), v: "name,age".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_order(qs)
+            .unwrap();
+        assert_eq!(result.sql, "ORDER BY name,age")
+    }
+
+    #[test]
+    fn order_by_request_multiples_columns_with_orders() {
+        let mut hm = Vec::new();
+        hm.push(Params{k: "_order".to_string(), v: "name,-age".to_string()});
+
+        let qs = QueryString{ query: hm };
+        let result = ext_order(qs)
+            .unwrap();
+        assert_eq!(result.sql, "ORDER BY name,age DESC")
     }
 }

@@ -17,10 +17,10 @@ This project is highly inspired on [pREST](https://github.com/nuveo/prest/)
 	- [X] COUNT `/db/sch/tbl?_count=column`
 		- [X] count with all columns `*`
 		- [X] count with specific column `_count=column1,column2`
-	- [ ] ORDER BY `/db/sch/tbl?_order=column`
-		- [ ] order by with asc `_order=column` __default__
-		- [ ] order by with desc `_order=-column`
-		- [ ] order by with multiple orders `_order=-column1,column2`
+	- [X] ORDER BY `/db/sch/tbl?_order=column`
+		- [X] order by with asc `_order=column` __default__
+		- [X] order by with desc `_order=-column`
+		- [X] order by with multiple orders `_order=-column1,column2`
 	- [ ] GROUP BY `/db/sch/tbl?_select=column1,column2&_groupby=column1`
 		- [ ] group by with group functions support `SUM, AVG, MAX, MIN`
 		- [ ] group by with having clause `_groupby=column1->>having:sum:column_name:$gt:500`
