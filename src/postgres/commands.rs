@@ -2,7 +2,7 @@ extern crate rocket;
 
 use rocket::request::{FromForm, FormItems};
 
-
+#[derive(Debug)]
 pub struct StatementStructResult {sql: String}
 pub struct WhereStructResult {
     sql: String, values: Vec<String>,
@@ -75,44 +75,20 @@ fn collect_params(v: &Vec<Params>, collect_values: bool) -> Result<Vec<String>,S
         .collect()
 }
 
-// Get QueryString and return SELECT statement
-pub fn ext_select(qs: QueryString) -> StatementResult {
-    let mut select_syntax: String = "SELECT * FROM".to_string();
-    let select_param = qs.query.iter().find(|param| param.k == "_select".to_string());
-    let columns = match select_param {
-        Some(param) => &param.v,
+// generic function to process statements: _select, _groupby, _order, _count
+fn process_statement<F>(qs: &QueryString, stm: &str, stm_default: &str, stm_fmt: &str, stm_fn: F) -> StatementResult
+    where F: Fn(&str) -> String
+{
+    let mut statement_syntax: String = String::from(stm_default);
+    let statement_params = qs.query.iter().find(|p| p.k == String::from(stm));
+    let columns = match statement_params {
+        Some(param) => stm_fn(&param.v),
         _ => return Err("".to_string())
     };
-
-    // empty string means that isn't `_select` command
     if columns != "" {
-        select_syntax = format!("SELECT {} FROM", columns);
+        statement_syntax = format!("{}", String::from(stm_fmt).replace("{}", &columns));
     }
-
-    Ok(StatementStructResult{ sql: select_syntax })
-}
-
-// Get QueryString and return COUNT clause statement
-pub fn ext_count(qs: QueryString) -> StatementResult {
-    let mut count_syntax: String = String::new();
-    let count_param = qs.query.iter().find(|param| param.k == "_count".to_string());
-    let columns = match count_param {
-        Some(param)=> {
-            let vsplited = &param.v.split(",").collect::<Vec<&str>>();
-            // FIXME, How to improve it?
-            let u :usize = 2;
-            if vsplited.len() >= u {
-                return Err("could not use more than one column in count function".to_string())
-            }
-            &param.v
-        },
-        _ => return Err("".to_string())
-    };
-
-    if columns != "" {
-        count_syntax = format!("SELECT COUNT({}) FROM", columns);
-    }
-    Ok(StatementStructResult{ sql: count_syntax })
+    Ok(StatementStructResult{ sql: statement_syntax })
 }
 
 // Get QueryString and return chunck WHERE statement with values
@@ -140,47 +116,46 @@ pub fn ext_where(qs: QueryString) -> WhereResult {
     })
 }
 
+// Get QueryString and return SELECT statement
+pub fn ext_select(qs: QueryString) -> StatementResult {
+    Ok(process_statement(&qs, "_select", "SELECT * FROM", "SELECT {} FROM", |x| String::from(x)).unwrap())
+}
+
+// Get QueryString and return COUNT clause statement
+pub fn ext_count(qs: QueryString) -> StatementResult {
+    // FIXME: Need handle errors
+    Ok(process_statement(&qs, "_count", "", "SELECT COUNT({}) FROM", |x| {
+        let vs = x.split(",").collect::<Vec<&str>>();
+        let result = if vs.len() > 1 {
+            ""
+        } else {
+            x
+        };
+        String::from(result)
+    }).unwrap())
+}
+
 // Get QueryString and return chunk ORDER BY statement
 pub fn ext_order(qs: QueryString) -> StatementResult {
-    let mut order_syntax: String = String::new();
-    let order_params = qs.query.iter().find(|param| param.k == "_order".to_string());
-    let columns = match order_params {
-        Some(param) => {
-            // need some refactor after!
-            let vspl = &param.v.split(",").map(|s| s.to_string()).collect::<Vec<String>>();
-            let od: Vec<String> = vspl.iter().map(|param| {
-                let mut s = String::new();
-                s.push_str(param); // omg
-                if s.starts_with("-") {
-                    s.remove(0);
-                    s.push_str(" DESC")
-                }
-                format!("{}", s)
-            }).collect();
-            format!("{}", od.join(","))
-        },
-        _ => return Err("".to_string())
-    };
+    Ok(process_statement(&qs, "_order", "", "ORDER BY {}", |x| {
+        let vspl = &x.split(",").collect::<Vec<&str>>();
+        let od: Vec<String> = vspl.iter().map(|param| {
+            let mut s = String::new();
+            s.push_str(param); // omg
+            if s.starts_with("-") {
+                s.remove(0);
+                s.push_str(" DESC")
+            }
+            format!("{}", s)
+        }).collect();
+        format!("{}", od.join(","))
+    }).unwrap())
 
-    if columns != "" {
-        order_syntax = format!("ORDER BY {}", columns);
-    }
-    Ok(StatementStructResult{ sql: order_syntax })
 }
 
 // Get QueryString and return chunk GROUP BY statement
 pub fn ext_groupby(qs: QueryString) -> StatementResult {
-    let mut groupby_syntax: String = String::new();
-    let groupby_params = qs.query.iter().find(|param| param.k == String::from("_groupby"));
-    let columns = match groupby_params {
-        Some(param) => &param.v,
-        _ => return Err(String::from(""))
-    };
-
-    if columns != "" {
-        groupby_syntax = format!("GROUP BY {}", columns);
-    }
-    Ok(StatementStructResult{ sql: groupby_syntax })
+    Ok(process_statement(&qs, "_groupby", "", "GROUP BY {}", |x| String::from(x)).unwrap())
 }
 
 #[cfg(test)]
@@ -334,7 +309,7 @@ mod tests {
         let qs = QueryString{ query: hm };
         match ext_count(qs) {
             Err(e) => assert_eq!(e, "could not use more than one column in count function"),
-            Ok(_) => println!("no result")
+            Ok(s) => assert_eq!(s.sql, "")
         }
     }
 
