@@ -160,7 +160,7 @@ pub fn ext_groupby(qs: QueryString) -> StatementResult {
 
 #[cfg(test)]
 mod tests {
-    use postgres::commands::*;
+    use postgresql::commands::*;
 
     #[test]
     fn get_opetators() {

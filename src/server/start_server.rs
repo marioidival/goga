@@ -1,6 +1,7 @@
 extern crate rocket;
 
 use api::{databases,schemas,tables};
+use postgresql::connection;
 
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
@@ -10,5 +11,7 @@ fn rocket() -> rocket::Rocket {
 }
 
 pub fn run() {
-    rocket().launch();
+    rocket()
+        .manage(connection::create_db_poll())
+        .launch();
 }
