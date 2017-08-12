@@ -47,7 +47,6 @@ lazy_static! {
     // Database constants
     static ref DatabaseSelect: String = String::from("SELECT {} FROM pg_database");
     static ref DatabaseOrderBy: String = String::from(" ORDER BY {} ASC"); // duplicated
-    #[derive(Debug)]
     pub static ref Databases: String = format!("{}", DatabaseSelect.replace("{}", FieldDatabaseName)) + DatabaseWhere +
         &format!("{}", DatabaseOrderBy.replace("{}", FieldDatabaseName));
 
@@ -55,11 +54,11 @@ lazy_static! {
     static ref SchemasSelect: String = String::from("SELECT {} FROM information_schema.schemata");
     static ref SchemasGroupBy: String = String::from(" GROUP BY {}");
     static ref SchemasOrderBy: String = String::from(" ORDER BY {} ASC"); // duplicated
-    static ref Schemas: String = format!("{}", SchemasSelect.replace("{}", FieldSchemaName)) +
+    pub static ref Schemas: String = format!("{}", SchemasSelect.replace("{}", FieldSchemaName)) +
         &format!("{}", SchemasOrderBy.replace("{}", FieldSchemaName));
 
 
-    static ref Tables: String = format!("{} {} {}", TablesSelect, TablesWhere, TablesOrderBy);
+    pub static ref Tables: String = format!("{} {} {}", TablesSelect, TablesWhere, TablesOrderBy);
 
     static ref SchemaTables: String = format!("{} {} {}", SchemaTablesSelect, SchemaTablesWhere, SchemaTablesOrderBy);
 
