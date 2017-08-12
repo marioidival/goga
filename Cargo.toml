@@ -11,6 +11,7 @@ serde_json = "1.0"
 serde_derive = "*"
 r2d2 = "^0.7"
 r2d2_postgres = "0.13.0"
+lazy_static = "0.2.8"
 
 [dependencies.postgres]
 version = "0.15.0"

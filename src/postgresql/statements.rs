@@ -3,22 +3,7 @@ use std::fmt;
 
 const FieldDatabaseName: &'static str = "datname";
 const FieldSchemaName: &'static str = "schema_name";
-const FieldCountDatabaseName: &'static str = format!("COUNT({})", FieldDatabaseName);
-const FieldCountSchemaName: &'static str = format!("COUNT({})", FieldSchemaName);
-
-// Database constants
-const DatabaseSelect: &'static str = "SELECT {} FROM pg_database";
 const DatabaseWhere: &'static str = " WHERE NOT datistemplate";
-const DatabaseOrderBy: &'static str = " ORDER BY {} ASC"; // duplicated
-const Databases: &'static str = format!(DatabaseSelect, FieldDatabaseName) + DatabaseWhere +
-    format!(DatabaseOrderBy, FieldDatabaseName);
-
-// Schemas constants
-const SchemasSelect: &'static str = "SELECT {} FROM information_schema.schemata";
-const SchemasGroupBy: &'static str = " GROUP BY {}";
-const SchemasOrderBy: &'static str = " ORDER BY {} ASC"; // duplicated
-const Schemas: &'static str = format!(SchemaSelect, FieldSchemaName) +
-    format!(SchemaOrderBy, FieldSchemaName);
 
 // Tables constants
 const TablesSelect: &'static str = "SELECT \
@@ -39,9 +24,8 @@ const TablesWhere: &'static str = " WHERE \
 c.relkind IN ('r','v','m','S','s','') AND \
 n.nspname !~ '^pg_toast' AND \
 n.nspname NOT IN ('information_schema', 'pg_catalog') AND \
-    has_schema_privilege(n.nspname, 'USAGE')";
+has_schema_privilege(n.nspname, 'USAGE')";
 const TablesOrderBy: &'static str = " ORDER BY 1, 2";
-const Tables: &'static str = TablesSelect + TablesWhere + TablesOrderBy;
 
 // Schemas + Tables constants
 const SchemaTablesSelect: &'static str = "SELECT \
@@ -52,13 +36,39 @@ const SchemaTablesSelect: &'static str = "SELECT \
           INNER JOIN information_schema.schemata sc ON sc.schema_name = t.schemaname";
 const SchemaTablesWhere: &'static str = " WHERE sc.catalog_name = $1 AND  t.schemaname = $2";
 const SchemaTablesOrderBy: &'static str = " ORDER BY t.tablename ASC";
-const SchemaTables: &'static str = SchemaTablesSelect + SchemaTablesWhere + SchemaTablesOrderBy;
 
-// Some operations
-const SelectAllInTable: &'static str = "SELECT * FROM";
-const InsertQuery: &'static str = "INSERT INTO {}.{}.{}({}) VALUES({})";
-const UpdateQuery: &'static str = "UPDATE {}.{}.{} SET {}";
-const DeleteQuery: &'static str = "DELETE FROM {}.{}.{}";
 
-const GroupBy: &'static str = "GROUP BY {}";
-const Having: &'static str = "HAVING {} {} {}";
+
+lazy_static! {
+
+    static ref FieldCountDatabaseName: String = format!("COUNT({})", FieldDatabaseName);
+    static ref FieldCountSchemaName: String = format!("COUNT({})", FieldSchemaName);
+
+    // Database constants
+    static ref DatabaseSelect: String = String::from("SELECT {} FROM pg_database");
+    static ref DatabaseOrderBy: String = String::from(" ORDER BY {} ASC"); // duplicated
+    #[derive(Debug)]
+    pub static ref Databases: String = format!("{}", DatabaseSelect.replace("{}", FieldDatabaseName)) + DatabaseWhere +
+        &format!("{}", DatabaseOrderBy.replace("{}", FieldDatabaseName));
+
+    // Schemas constants
+    static ref SchemasSelect: String = String::from("SELECT {} FROM information_schema.schemata");
+    static ref SchemasGroupBy: String = String::from(" GROUP BY {}");
+    static ref SchemasOrderBy: String = String::from(" ORDER BY {} ASC"); // duplicated
+    static ref Schemas: String = format!("{}", SchemasSelect.replace("{}", FieldSchemaName)) +
+        &format!("{}", SchemasOrderBy.replace("{}", FieldSchemaName));
+
+
+    static ref Tables: String = format!("{} {} {}", TablesSelect, TablesWhere, TablesOrderBy);
+
+    static ref SchemaTables: String = format!("{} {} {}", SchemaTablesSelect, SchemaTablesWhere, SchemaTablesOrderBy);
+
+    // Some operations
+    static ref SelectAllInTable: &'static str = "SELECT * FROM";
+    static ref InsertQuery: String = String::from("INSERT INTO {}.{}.{}({}) VALUES({})");
+    static ref UpdateQuery: String = String::from("UPDATE {}.{}.{} SET {}");
+    static ref DeleteQuery: String = String::from("DELETE FROM {}.{}.{}");
+
+    static ref GroupBy: String = String::from(" GROUP BY {}");
+    static ref Having: String = String::from(" HAVING {} {} {}");
+}
