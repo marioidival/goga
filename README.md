@@ -8,6 +8,10 @@ This project is highly inspired on [pREST](https://github.com/nuveo/prest/)
 
 # TODO
 - HTTP GET
+
+	- [X] Get all DATABASES
+	- [X] Get all SCHEMAS
+	- [X] Get all TABLES
 	- [X] SELECT `/db/sch/tbl?_select=column`
 		- [X] select with all columns `*`
 		- [X] select with specific column `_select=column1,column2`

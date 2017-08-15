@@ -28,14 +28,14 @@ has_schema_privilege(n.nspname, 'USAGE')";
 const TablesOrderBy: &'static str = " ORDER BY 1, 2";
 
 // Schemas + Tables constants
-const SchemaTablesSelect: &'static str = "SELECT \
-          t.tablename as \"name\" \
-          t.schemaname as \"schema\", \
-          sc.catalog_name as \"database\" \
-          FROM pg_catalog.pg_tables t \
+const SchemaTablesSelect: &'static str = "SELECT
+          t.tablename as \"name\",
+          t.schemaname as \"schema\",
+          sc.catalog_name as \"database\" 
+          FROM pg_catalog.pg_tables t
           INNER JOIN information_schema.schemata sc ON sc.schema_name = t.schemaname";
-const SchemaTablesWhere: &'static str = " WHERE sc.catalog_name = $1 AND  t.schemaname = $2";
-const SchemaTablesOrderBy: &'static str = " ORDER BY t.tablename ASC";
+const SchemaTablesWhere: &'static str = "WHERE sc.catalog_name = $1 AND t.schemaname = $2";
+const SchemaTablesOrderBy: &'static str = "ORDER BY t.tablename ASC";
 
 
 
@@ -60,7 +60,7 @@ lazy_static! {
 
     pub static ref Tables: String = format!("{} {} {}", TablesSelect, TablesWhere, TablesOrderBy);
 
-    static ref SchemaTables: String = format!("{} {} {}", SchemaTablesSelect, SchemaTablesWhere, SchemaTablesOrderBy);
+    pub static ref SchemaTables: String = format!("{} {} {}", SchemaTablesSelect, SchemaTablesWhere, SchemaTablesOrderBy);
 
     // Some operations
     static ref SelectAllInTable: &'static str = "SELECT * FROM";

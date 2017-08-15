@@ -26,11 +26,11 @@ fn norm_rows(rows: &Rows) -> Vec<HashMap<&str, String>> {
                 &VARCHAR => row.get::<_, String>(x),
                 // System Identifier
                 ref mut name => row.get::<_, String>(x),
-                _ => String::from("")
+                _ => String::from(""),
             };
             r.insert(column.name(), value);
-            res.push(r.clone());
         }
+        res.push(r);
     }
     res
 }
