@@ -1,13 +1,13 @@
 use api::rocket_contrib::{Json, Value};
-use api::norm_rows;
 
-use postgresql::statements::Schemas;
+use postgresql::statements::SCHEMAS;
 use postgresql::connection::DbConn;
 
 
 #[get("/")]
 pub fn sch(conn: DbConn) -> Json<Value> {
-    let rows = &conn.query(&*Schemas, &[]).unwrap();
-    let res = norm_rows(&rows);
-    Json(json!(&res))
+    let query = format!("SELECT json_agg(s) FROM ({}) s", &*SCHEMAS);
+    let rows = &conn.query(&query, &[]).unwrap();
+    let result: Value = rows.get(0).get("json_agg");
+    Json(result)
 }

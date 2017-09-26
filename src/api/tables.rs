@@ -1,28 +1,30 @@
 use api::rocket_contrib::{Json, Value};
-use api::norm_rows;
 
-use postgresql::statements::{SchemaTables, Tables};
+use postgresql::statements::{SCHEMA_TABLES, TABLES};
 use postgresql::connection::DbConn;
 
 
 #[get("/")]
 pub fn tbl(conn: DbConn) -> Json<Value> {
-    let rows = &conn.query(&*Tables, &[]).unwrap();
-    let res = norm_rows(&rows);
-    Json(json!(&res))
+    let query = format!("SELECT json_agg(s) FROM ({}) s", &*TABLES);
+    let rows = &conn.query(&query, &[]).unwrap();
+    let result: Value = rows.get(0).get("json_agg");
+    Json(result)
 }
 
 #[get("/<database>/<schema>")]
 pub fn all_tbl(conn: DbConn, database: String, schema: String) -> Json<Value> {
-    let rows = &conn.query(&*SchemaTables, &[&database, &schema]).unwrap();
-    let res = norm_rows(&rows);
-    Json(json!(&res))
+    let query = format!("SELECT json_agg(s) FROM ({}) s", &*SCHEMA_TABLES);
+    let rows = &conn.query(&query, &[&database, &schema]).unwrap();
+    let result: Value = rows.get(0).get("json_agg");
+    Json(result)
 }
 
 #[get("/<database>/<schema>/<table>")]
 pub fn select_table(conn: DbConn, database: String, schema: String, table: String) -> Json<Value> {
     let select = format!("SELECT * FROM {}.{}.{}", database, schema, table);
-    let rows = &conn.query(&select, &[]).unwrap();
-    let res = norm_rows(&rows);
-    Json(json!(&res))
+    let query = format!("SELECT json_agg(s) FROM ({}) s", select);
+    let rows = &conn.query(&query, &[]).unwrap();
+    let result: Value = rows.get(0).get("json_agg");
+    Json(result)
 }

@@ -1,12 +1,12 @@
 use api::rocket_contrib::{Json, Value};
-use api::norm_rows;
 
-use postgresql::statements::Databases;
+use postgresql::statements::DATABASES;
 use postgresql::connection::DbConn;
 
 #[get("/")]
 pub fn dbs(conn: DbConn) -> Json<Value> {
-    let rows = &conn.query(&*Databases, &[]).unwrap();
-    let res = norm_rows(&rows);
-    Json(json!(&res))
+    let query = format!("SELECT json_agg(s) FROM ({}) s", &*DATABASES);
+    let rows = &conn.query(&query, &[]).unwrap();
+    let result: Value = rows.get(0).get("json_agg");
+    Json(result)
 }
