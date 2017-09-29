@@ -104,7 +104,7 @@ where
 }
 
 // Get QueryString and return chunck WHERE statement with values
-pub fn ext_where(qs: QueryString) -> WhereResult {
+pub fn ext_where(qs: &QueryString) -> WhereResult {
     let where_syntax: String;
     let ref iter_params = qs.query;
     let where_values = match collect_params(iter_params, true) {
@@ -129,19 +129,19 @@ pub fn ext_where(qs: QueryString) -> WhereResult {
 }
 
 // Get QueryString and return SELECT statement
-pub fn ext_select(qs: QueryString) -> StatementResult {
+pub fn ext_select(qs: &QueryString) -> StatementResult {
     Ok(
-        process_statement(&qs, "_select", "SELECT * FROM", "SELECT {} FROM", |x| {
+        process_statement(qs, "_select", "SELECT * FROM", "SELECT {} FROM", |x| {
             String::from(x)
         }).unwrap(),
     )
 }
 
 // Get QueryString and return COUNT clause statement
-pub fn ext_count(qs: QueryString) -> StatementResult {
+pub fn ext_count(qs: &QueryString) -> StatementResult {
     // FIXME: Need handle errors
     Ok(
-        process_statement(&qs, "_count", "", "SELECT COUNT({}) FROM", |x| {
+        process_statement(qs, "_count", "", "SELECT COUNT({}) FROM", |x| {
             let vs = x.split(",").collect::<Vec<&str>>();
             let result = if vs.len() > 1 { "" } else { x };
             String::from(result)
@@ -172,9 +172,9 @@ pub fn ext_order(qs: QueryString) -> StatementResult {
 }
 
 // Get QueryString and return chunk GROUP BY statement
-pub fn ext_groupby(qs: QueryString) -> StatementResult {
+pub fn ext_groupby(qs: &QueryString) -> StatementResult {
     Ok(
-        process_statement(&qs, "_groupby", "", "GROUP BY {}", |x| String::from(x)).unwrap(),
+        process_statement(qs, "_groupby", "", "GROUP BY {}", |x| String::from(x)).unwrap(),
     )
 }
 
@@ -224,7 +224,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_where(qs).unwrap();
+        let result = ext_where(&qs).unwrap();
         assert_eq!(result.sql, "WHERE user_id=$1".to_string());
         assert_eq!(result.values, vec!["5".to_string()])
     }
@@ -242,7 +242,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_where(qs).unwrap();
+        let result = ext_where(&qs).unwrap();
         assert_eq!(result.sql, "WHERE user_id=$1 AND name=$2".to_string());
         assert_eq!(result.values, vec!["5".to_string(), "goga".to_string()])
     }
@@ -260,7 +260,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_where(qs).unwrap();
+        let result = ext_where(&qs).unwrap();
         assert_eq!(result.sql, "WHERE user_id!=$1 AND name=$2".to_string());
         assert_eq!(result.values, vec!["5".to_string(), "goga".to_string()])
     }
@@ -278,7 +278,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        match ext_where(qs) {
+        match ext_where(&qs) {
             Err(e) => assert_eq!(e, "operator $nt not found"),
             Ok(_) => println!("no result"),
         }
@@ -293,7 +293,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_select(qs).unwrap();
+        let result = ext_select(&qs).unwrap();
         assert_eq!(result.sql, "SELECT name FROM");
     }
 
@@ -306,7 +306,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_select(qs).unwrap();
+        let result = ext_select(&qs).unwrap();
         assert_eq!(result.sql, "SELECT name,age FROM");
     }
 
@@ -319,7 +319,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_select(qs).unwrap();
+        let result = ext_select(&qs).unwrap();
         assert_eq!(result.sql, "SELECT * FROM");
     }
 
@@ -332,7 +332,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_count(qs).unwrap();
+        let result = ext_count(&qs).unwrap();
         assert_eq!(result.sql, "SELECT COUNT(name) FROM");
     }
 
@@ -345,7 +345,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_count(qs).unwrap();
+        let result = ext_count(&qs).unwrap();
         assert_eq!(result.sql, "SELECT COUNT(*) FROM");
     }
 
@@ -358,7 +358,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        match ext_count(qs) {
+        match ext_count(&qs) {
             Err(e) => assert_eq!(e, "could not use more than one column in count function"),
             Ok(s) => assert_eq!(s.sql, ""),
         }
@@ -373,7 +373,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_count(qs).unwrap();
+        let result = ext_count(&qs).unwrap();
         assert_eq!(result.sql, "")
     }
 
@@ -386,7 +386,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_order(qs).unwrap();
+        let result = ext_order(&qs).unwrap();
         assert_eq!(result.sql, "ORDER BY name")
     }
 
@@ -399,7 +399,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_order(qs).unwrap();
+        let result = ext_order(&qs).unwrap();
         assert_eq!(result.sql, "ORDER BY name DESC")
     }
 
@@ -425,7 +425,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_order(qs).unwrap();
+        let result = ext_order(&qs).unwrap();
         assert_eq!(result.sql, "ORDER BY name,age")
     }
 
@@ -438,7 +438,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_order(qs).unwrap();
+        let result = ext_order(&qs).unwrap();
         assert_eq!(result.sql, "ORDER BY name,age DESC")
     }
 
@@ -451,7 +451,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_groupby(qs).unwrap();
+        let result = ext_groupby(&qs).unwrap();
         assert_eq!(result.sql, "GROUP BY name")
     }
 
@@ -464,7 +464,7 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_groupby(qs).unwrap();
+        let result = ext_groupby(&qs).unwrap();
         assert_eq!(result.sql, "")
     }
 }
