@@ -10,6 +10,7 @@ fn rocket() -> rocket::Rocket {
         .mount("/tables", routes![tables::tbl])
         .mount("/", routes![tables::all_tbl])
         .mount("/", routes![tables::select_table])
+        .mount("/", routes![tables::select_table_qs]) // select with querystring
 }
 
 pub fn run() {
