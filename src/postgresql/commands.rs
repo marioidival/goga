@@ -2,11 +2,11 @@ use rocket::request::{FromForm, FormItems};
 
 #[derive(Debug)]
 pub struct StatementStructResult {
-    sql: String,
+    pub sql: String,
 }
 pub struct WhereStructResult {
-    sql: String,
-    values: Vec<String>,
+    pub sql: String,
+    pub values: Vec<String>,
 }
 
 // My Results
@@ -15,11 +15,13 @@ type StatementResult = Result<StatementStructResult, String>;
 type WhereResult = Result<WhereStructResult, String>;
 
 // TODO: Move there later
+#[derive(Debug)]
 pub struct Params {
     pub k: String,
     pub v: String,
 }
 // implement QueryString
+#[derive(Debug)]
 pub struct QueryString {
     pub query: Vec<Params>,
 }
@@ -95,7 +97,7 @@ where
     let statement_params = qs.query.iter().find(|p| p.k == String::from(stm));
     let columns = match statement_params {
         Some(param) => stm_fn(&param.v),
-        _ => return Err("".to_string()),
+        _ => String::from(""),
     };
     if columns != "" {
         statement_syntax = format!("{}", String::from(stm_fmt).replace("{}", &columns));
@@ -150,25 +152,22 @@ pub fn ext_count(qs: &QueryString) -> StatementResult {
 }
 
 // Get QueryString and return chunk ORDER BY statement
-pub fn ext_order(qs: QueryString) -> StatementResult {
-    Ok(
-        process_statement(&qs, "_order", "", "ORDER BY {}", |x| {
-            let vspl = &x.split(",").collect::<Vec<&str>>();
-            let od: Vec<String> = vspl.iter()
-                .map(|param| {
-                    let mut s = String::new();
-                    s.push_str(param); // omg
-                    if s.starts_with("-") {
-                        s.remove(0);
-                        s.push_str(" DESC")
-                    }
-                    format!("{}", s)
-                })
-                .collect();
-            format!("{}", od.join(","))
-        }).unwrap(),
-    )
-
+pub fn ext_order(qs: &QueryString) -> StatementResult {
+    process_statement(qs, "_order", "", "ORDER BY {}", |x| {
+        let vspl = &x.split(",").collect::<Vec<&str>>();
+        let od: Vec<String> = vspl.iter()
+            .map(|param| {
+                let mut s = String::new();
+                s.push_str(param); // omg
+                if s.starts_with("-") {
+                    s.remove(0);
+                    s.push_str(" DESC")
+                }
+                format!("{}", s)
+            })
+            .collect();
+        format!("{}", od.join(","))
+    })
 }
 
 // Get QueryString and return chunk GROUP BY statement
@@ -412,8 +411,23 @@ mod tests {
         });
 
         let qs = QueryString { query: hm };
-        let result = ext_order(qs).unwrap();
+        let result = ext_order(&qs).unwrap();
         assert_eq!(result.sql, "")
+    }
+
+    #[test]
+    fn order_by_request_without_params() {
+        let mut hm = Vec::new();
+        hm.push(Params {
+            k: "name".to_string(),
+            v: "toby".to_string(),
+        });
+
+        let qs = QueryString { query: hm };
+        match ext_order(&qs) {
+            Ok(result) => assert_eq!(result.sql, ""),
+            Err(e) => assert_eq!("error on params", e),
+        };
     }
 
     #[test]
