@@ -351,6 +351,19 @@ mod tests {
     }
 
     #[test]
+    fn select_by_request_without_select() {
+        let mut hm = Vec::new();
+        hm.push(Params {
+            k: "user".to_string(),
+            v: "blah".to_string(),
+        });
+
+        let qs = QueryString { query: hm };
+        let result = ext_select(&qs).unwrap();
+        assert_eq!(result.sql, "SELECT * FROM");
+    }
+
+    #[test]
     fn count_by_request() {
         let mut hm = Vec::new();
         hm.push(Params {

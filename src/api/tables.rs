@@ -40,9 +40,11 @@ pub fn select_table_qs(
 ) -> Json<Value> {
     let where_result = ext_where(&qs).unwrap();
     let orderby_result = ext_order(&qs).unwrap();
+    let select_result = ext_select(&qs).unwrap();
 
     let select = format!(
-        "SELECT * FROM {}.{}.{} {} {}",
+        "{} {}.{}.{} {} {}",
+        select_result.sql,
         database,
         schema,
         table,
