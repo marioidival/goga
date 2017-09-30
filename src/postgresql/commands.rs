@@ -231,7 +231,7 @@ mod tests {
 
         let qs = QueryString { query: hm };
         let result = ext_where(&qs).unwrap();
-        assert_eq!(result.sql, "WHERE user_id=$1".to_string());
+        assert_eq!(result.sql, "WHERE user_id::text=$1".to_string());
         assert_eq!(result.values, vec!["5".to_string()])
     }
 
@@ -249,7 +249,7 @@ mod tests {
 
         let qs = QueryString { query: hm };
         let result = ext_where(&qs).unwrap();
-        assert_eq!(result.sql, "WHERE user_id=$1".to_string());
+        assert_eq!(result.sql, "WHERE user_id::text=$1".to_string());
         assert_eq!(result.values, vec!["5".to_string()])
     }
 
@@ -267,7 +267,7 @@ mod tests {
 
         let qs = QueryString { query: hm };
         let result = ext_where(&qs).unwrap();
-        assert_eq!(result.sql, "WHERE user_id=$1 AND name=$2".to_string());
+        assert_eq!(result.sql, "WHERE user_id::text=$1 AND name=$2".to_string());
         assert_eq!(result.values, vec!["5".to_string(), "goga".to_string()])
     }
 
@@ -285,7 +285,10 @@ mod tests {
 
         let qs = QueryString { query: hm };
         let result = ext_where(&qs).unwrap();
-        assert_eq!(result.sql, "WHERE user_id!=$1 AND name=$2".to_string());
+        assert_eq!(
+            result.sql,
+            "WHERE user_id::text!=$1 AND name=$2".to_string()
+        );
         assert_eq!(result.values, vec!["5".to_string(), "goga".to_string()])
     }
 
