@@ -60,6 +60,7 @@ pub fn query_operator(qop: &str) -> QueryOpResult {
 fn collect_params(v: &Vec<Params>, collect_values: bool) -> Result<Vec<String>, String> {
     let mut pid: i32 = 0;
     v.iter()
+        .filter(|param| !param.k.starts_with("_"))
         .map(|param| {
             pid = pid + 1;
             let result = match param.v.contains(".") {
@@ -76,7 +77,13 @@ fn collect_params(v: &Vec<Params>, collect_values: bool) -> Result<Vec<String>, 
             if collect_values {
                 Ok(format!("{}", result.1))
             } else {
-                Ok(format!("{}{}${}", param.k, result.0, pid))
+                // biggest workaround ever!
+                let commons = ["pk", "id"];
+                if commons.iter().any(|c| param.k.contains(c)) {
+                    Ok(format!("{}::text{}${}", param.k, result.0, pid))
+                } else {
+                    Ok(format!("{}{}${}", param.k, result.0, pid))
+                }
             }
         })
         .collect()
@@ -220,6 +227,24 @@ mod tests {
         hm.push(Params {
             k: "user_id".to_string(),
             v: "5".to_string(),
+        });
+
+        let qs = QueryString { query: hm };
+        let result = ext_where(&qs).unwrap();
+        assert_eq!(result.sql, "WHERE user_id=$1".to_string());
+        assert_eq!(result.values, vec!["5".to_string()])
+    }
+
+    #[test]
+    fn where_by_request_with_orderby() {
+        let mut hm = Vec::new();
+        hm.push(Params {
+            k: "user_id".to_string(),
+            v: "5".to_string(),
+        });
+        hm.push(Params {
+            k: "_order".to_string(),
+            v: "user_id".to_string(),
         });
 
         let qs = QueryString { query: hm };
