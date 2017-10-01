@@ -1,5 +1,8 @@
+use std::str::FromStr;
+
 use api::rocket_contrib::{Json, Value};
 
+use postgres::types::ToSql;
 use postgresql::statements::{SCHEMA_TABLES, TABLES};
 use postgresql::connection::DbConn;
 use postgresql::commands::*;
@@ -30,6 +33,18 @@ pub fn select_table(conn: DbConn, database: String, schema: String, table: Strin
     Json(result)
 }
 
+fn normalize_values(values: Vec<String>) -> Vec<Box<ToSql>> {
+    let mut sequelized: Vec<Box<ToSql>> = Vec::new();
+
+    for value in values {
+        match value.parse::<u32>() {
+            Ok(_) => sequelized.push(Box::new(i32::from_str(&value).unwrap())),
+            Err(_) => sequelized.push(Box::new(value)),
+        }
+    }
+    sequelized
+}
+
 #[get("/<database>/<schema>/<table>?<qs>")]
 pub fn select_table_qs(
     conn: DbConn,
@@ -53,7 +68,9 @@ pub fn select_table_qs(
     );
 
     let query = format!("SELECT json_agg(s) FROM ({}) s", select);
-    let rows = &conn.query(&query, &[&where_result.values[0]]).unwrap();
+    let values = normalize_values(where_result.values);
+    let params = values.iter().map(|b| &**b).collect::<Vec<&ToSql>>();
+    let rows = &conn.query(&query, &params).unwrap();
     let result: Value = rows.get(0).get("json_agg");
     Json(result)
 }

@@ -77,13 +77,7 @@ fn collect_params(v: &Vec<Params>, collect_values: bool) -> Result<Vec<String>, 
             if collect_values {
                 Ok(format!("{}", result.1))
             } else {
-                // biggest workaround ever!
-                let commons = ["pk", "id"];
-                if commons.iter().any(|c| param.k.contains(c)) {
-                    Ok(format!("{}::text{}${}", param.k, result.0, pid))
-                } else {
-                    Ok(format!("{}{}${}", param.k, result.0, pid))
-                }
+                Ok(format!("{}{}${}", param.k, result.0, pid))
             }
         })
         .collect()
@@ -231,7 +225,7 @@ mod tests {
 
         let qs = QueryString { query: hm };
         let result = ext_where(&qs).unwrap();
-        assert_eq!(result.sql, "WHERE user_id::text=$1".to_string());
+        assert_eq!(result.sql, "WHERE user_id=$1".to_string());
         assert_eq!(result.values, vec!["5".to_string()])
     }
 
@@ -249,7 +243,7 @@ mod tests {
 
         let qs = QueryString { query: hm };
         let result = ext_where(&qs).unwrap();
-        assert_eq!(result.sql, "WHERE user_id::text=$1".to_string());
+        assert_eq!(result.sql, "WHERE user_id=$1".to_string());
         assert_eq!(result.values, vec!["5".to_string()])
     }
 
@@ -267,7 +261,7 @@ mod tests {
 
         let qs = QueryString { query: hm };
         let result = ext_where(&qs).unwrap();
-        assert_eq!(result.sql, "WHERE user_id::text=$1 AND name=$2".to_string());
+        assert_eq!(result.sql, "WHERE user_id=$1 AND name=$2".to_string());
         assert_eq!(result.values, vec!["5".to_string(), "goga".to_string()])
     }
 
@@ -285,10 +279,7 @@ mod tests {
 
         let qs = QueryString { query: hm };
         let result = ext_where(&qs).unwrap();
-        assert_eq!(
-            result.sql,
-            "WHERE user_id::text!=$1 AND name=$2".to_string()
-        );
+        assert_eq!(result.sql, "WHERE user_id!=$1 AND name=$2".to_string());
         assert_eq!(result.values, vec!["5".to_string(), "goga".to_string()])
     }
 
