@@ -1,4 +1,4 @@
-use rocket::request::{FromForm, FormItems};
+use rocket::request::{FormItems, FromForm};
 
 #[derive(Debug)]
 pub struct StatementStructResult {
@@ -103,7 +103,9 @@ where
     if columns != "" {
         statement_syntax = format!("{}", String::from(stm_fmt).replace("{}", &columns));
     }
-    Ok(StatementStructResult { sql: statement_syntax })
+    Ok(StatementStructResult {
+        sql: statement_syntax,
+    })
 }
 
 // Get QueryString and return chunck WHERE statement with values
@@ -173,9 +175,7 @@ pub fn ext_order(qs: &QueryString) -> StatementResult {
 
 // Get QueryString and return chunk GROUP BY statement
 pub fn ext_groupby(qs: &QueryString) -> StatementResult {
-    Ok(
-        process_statement(qs, "_groupby", "", "GROUP BY {}", |x| String::from(x)).unwrap(),
-    )
+    Ok(process_statement(qs, "_groupby", "", "GROUP BY {}", |x| String::from(x)).unwrap())
 }
 
 #[cfg(test)]

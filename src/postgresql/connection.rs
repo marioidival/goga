@@ -1,12 +1,12 @@
-use r2d2::{Pool, Config, PooledConnection};
-use r2d2_postgres::{TlsMode, PostgresConnectionManager};
+use r2d2::{Config, Pool, PooledConnection};
+use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use std::env;
 
 use std::ops::Deref;
 use postgres::Connection as PostgresConnection;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
-use rocket::{Request, State, Outcome};
+use rocket::{Outcome, Request, State};
 
 type Poll = Pool<PostgresConnectionManager>;
 pub struct DbConn(pub PooledConnection<PostgresConnectionManager>);
@@ -21,7 +21,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for DbConn {
         let pool = request.guard::<State<Poll>>()?;
         match pool.get() {
             Ok(conn) => Outcome::Success(DbConn(conn)),
-            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ()))
+            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
         }
     }
 }

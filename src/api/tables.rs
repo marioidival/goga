@@ -7,7 +7,6 @@ use postgresql::statements::{SCHEMA_TABLES, TABLES};
 use postgresql::connection::DbConn;
 use postgresql::commands::*;
 
-
 #[get("/")]
 pub fn tbl(conn: DbConn) -> Json<Value> {
     let query = format!("SELECT json_agg(s) FROM ({}) s", &*TABLES);
@@ -59,12 +58,7 @@ pub fn select_table_qs(
 
     let select = format!(
         "{} {}.{}.{} {} {}",
-        select_result.sql,
-        database,
-        schema,
-        table,
-        where_result.sql,
-        orderby_result.sql
+        select_result.sql, database, schema, table, where_result.sql, orderby_result.sql
     );
 
     let query = format!("SELECT json_agg(s) FROM ({}) s", select);
