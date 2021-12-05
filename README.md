@@ -3,7 +3,7 @@ A fully RESTful API from any existing PostgreSQL database written in Rust
 
 # Inspiration
 
-This project is highly inspired on [pREST](https://github.com/nuveo/prest/)
+This project is highly inspired on [pREST](https://github.com/nuveo/prest/). Then 4 years later, highly inspired from a conversation. Now it’s out of the grave
 
 
 # TODO
